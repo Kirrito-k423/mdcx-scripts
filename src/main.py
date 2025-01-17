@@ -30,17 +30,27 @@ def alpha2num(s):
     else:
         return int(s)
 
-def ExstractJAV(video_filename):
+# 定义正则表达式模式
+pattern1 = r"""
+    ^(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+    (?:[0-]+|-)?(?P<id>\d+)          # ID，由0或-分割的第一个数字编号ID
+    (?:[_-](?P<cd_id>\d*[a-zA-Z]*))? # CD-ID，由_或-分割的数字或字母
+    (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+    (?:@*)?
+    $
+"""
+
+pattern2 = r"""
+    ^(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+    (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+    (?:[a-zA-Z0-9]+)        # CD-ID，字母和数字的组合
+    (?P<cd_id>\d+)           # 最后的数字
+    (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+    $
+"""
+def ExstractJAV(video_filename, pattern):
     ic(video_filename)
-    # 定义正则表达式模式
-    pattern = r"""
-        ^(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
-        (?:[0-]+|-)?(?P<id>\d+)          # ID，由0或-分割的第一个数字编号ID
-        (?:[_-](?P<cd_id>\d*[a-zA-Z]*))? # CD-ID，由_或-分割的数字或字母
-        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
-        (?:@*)?
-        $
-    """
+    
     # 使用正则表达式进行匹配
     match = re.match(pattern, video_filename, re.VERBOSE)
     if match:
@@ -59,7 +69,10 @@ def ExstractJAV(video_filename):
     else:
         # 如果没有匹配到，返回None或适当的错误信息
         log.warning(f"Failed to parse video filename: {video_filename}")
-        return None
+        if pattern == pattern2:
+            return None
+        else:
+            return ExstractJAV(video_filename, pattern2)
 
 def extract_resolution_from_path(path):
     # 分割路径
@@ -138,7 +151,7 @@ if __name__ == '__main__':
         video_filename = os.path.splitext(os.path.basename(failed_video))[0]
         video_type = os.path.splitext(os.path.basename(failed_video))[1]
         # 识别出 AV 的标识
-        JAV_ID = ExstractJAV(video_filename)
+        JAV_ID = ExstractJAV(video_filename, pattern1)
         ic(JAV_ID)
         target_folder, target_resolution = SearchTargetJav(f"{args_list.path}/JAV_output", JAV_ID)
         ic(target_folder)
