@@ -135,10 +135,54 @@ def MoveVideos(target_file, source_file):
         log.info(f"File moved successfully: {source_file} to {target_file}")
     except Exception as e:
         log.error(f"Failed to move file: {source_file} to {target_file}. Error: {e}")
+
+def MoveQBTail(input_dir):
+    if not os.path.isdir(input_dir):
+        print("输入的路径不是一个有效的目录。")
+        return
+
+    failed_dir = os.path.join(input_dir, "failed")
+    if not os.path.exists(failed_dir):
+        os.makedirs(failed_dir)
+
+    # 查找所有以 !qB 结尾的文件
+    files_with_qb = []
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.endswith("!qB"):
+                full_path = os.path.join(root, file)
+                files_with_qb.append(full_path)
+
+    if not files_with_qb:
+        print("没有找到以 !qB 结尾的文件。")
+        return
+
+    print(f"共找到 {len(files_with_qb)} 个以 !qB 结尾的文件。")
+
+    # 处理每个文件
+    for file_path in files_with_qb:
+        file_name = os.path.basename(file_path)
+        print(f"\n发现文件：{file_name}")
+        choice = input("是否需要去除 '!qB' 后缀并移动到 failed 文件夹？(y_enter/n): ").strip().lower()
+
+        if choice in ['y', '']:
+            new_file_name = file_name[:-4]  # 去掉最后三个字符 ".!qB"
+            dest_path = os.path.join(failed_dir, new_file_name)
+
+            try:
+                os.rename(file_path, dest_path)
+                print(f"已重命名为 '{new_file_name}' 并移动至 failed 文件夹。")
+            except Exception as e:
+                print(f"处理文件时出错：{e}")
+        else:
+            print("跳过此文件。")
     
 if __name__ == '__main__':
     args_list = inputParameters()
     isIceEnable(args_list.debug)
+    
+    MoveQBTail(args_list.path)
+    
     fvideo_list = GetVideoList(f"{args_list.path}/failed")
     for failed_video in fvideo_list:
         # 过滤掉文件大小小于100MB 的文件， 或者名称里包含中文的
@@ -167,7 +211,7 @@ if __name__ == '__main__':
                          format(target_resolution[0], JAV_ID['resolution']))
             print("Move {} file to {} ".format(failed_video,target_file_path ))
             
-            user_input = input("Do you want to proceed with the move? [y/Enter to skip]: ").strip().lower()
+            user_input = input("Do you want to proceed with the move? [y/Enter to move]: ").strip().lower()
             
             if user_input in ['y', '']:
                 MoveVideos(target_file_path, failed_video)
