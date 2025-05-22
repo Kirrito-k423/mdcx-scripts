@@ -63,6 +63,31 @@ pattern_list = [
         (?P<cd_id>\d+)           # 最后的数字
         (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
         $
+    """,
+    # vrprd00058_1_uhq
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (\_)        # CD-ID，字母和数字的组合
+        (?P<cd_id>\d+)           # 最后的数字
+        (.*)?     # 清晰度，可选的8k或4k
+        $
+    """,
+    # DSVR-051B-8K
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+        $
+    """,
+    # DSVR-1016_R2
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (\_R)        # CD-ID，字母和数字的组合
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        $
     """
 ]
 
@@ -220,12 +245,16 @@ if __name__ == '__main__':
         JAV_ID = ExstractJAV(video_filename, 0)
         ic(JAV_ID)
         target_folder, target_resolution = SearchTargetJav(f"{args_list.path}/JAV_output", JAV_ID)
-        ic(target_folder)
+        ic(target_folder, target_resolution)
         if len(target_folder) == 0:
             log.info("Skip no target folder: {}".format(failed_video))
             continue
-        target_file_name = f"{JAV_ID['series']}-{JAV_ID['id']}-{target_resolution[0]}-cd{JAV_ID['cd_id'] if JAV_ID['cd_id'] else ''}{video_type}"
-        target_file_path = f"{target_folder[0]}/{target_file_name}"
+        save_index = 0 
+        for i in range(len(target_resolution)):
+            if JAV_ID['resolution'] == target_resolution[i]:
+                save_index = i
+        target_file_name = f"{JAV_ID['series']}-{JAV_ID['id']}-{target_resolution[save_index]}-cd{JAV_ID['cd_id'] if JAV_ID['cd_id'] else ''}{video_type}"
+        target_file_path = f"{target_folder[save_index]}/{target_file_name}"
         ic(target_file_path)
         if CheckIfPlace(target_file_path, failed_video):
             if JAV_ID['resolution'] and target_resolution[0] != JAV_ID['resolution']:
