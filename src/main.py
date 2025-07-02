@@ -88,7 +88,27 @@ pattern_list = [
         (\_R)        # CD-ID，字母和数字的组合
         (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
         $
+    """,
+    # DSVR-1688-C-8K-1
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (?P<ABC>-C)        
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
+        (-)
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        $
+    """,
+    # juvr00234.part1_8K   part1是集数
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (\.part)        
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
+        $
     """
+    
 ]
 
 
@@ -102,16 +122,23 @@ def ExstractJAV(video_filename, tryi):
         # 提取匹配的组
         series = match.group('series').upper()
         series = ''.join(filter(str.isalpha, series)).upper()
+        
         id = match.group('id').zfill(3)
         cd_id = str(alpha2num(match.group('cd_id'))) if match.group('cd_id') else None
-        groups = match.groups()
-        resolution = groups[3].upper() if len(groups) > 3 and groups[3] else None
+        
+        abc = match.groupdict().get('ABC')
+
+        if match.group('resolution'):
+            resolution = match.group('resolution').upper()
+        else:
+            resolution = None
         # 返回结果字典
         return {
             'series': series,
             'id': id,
             'cd_id': cd_id,
-            'resolution': resolution
+            'resolution': resolution,
+            'abc': abc
         }
     else:
         if tryi == len(pattern_list) - 1:
@@ -228,7 +255,7 @@ if __name__ == '__main__':
     args_list = inputParameters()
     isIceEnable(args_list.debug)
     
-    MoveQBTail(args_list.path)
+    # MoveQBTail(args_list.path)
     
     fvideo_list = GetVideoList(f"{args_list.path}/failed")
     for failed_video in fvideo_list:
@@ -253,7 +280,7 @@ if __name__ == '__main__':
         for i in range(len(target_resolution)):
             if JAV_ID['resolution'] == target_resolution[i]:
                 save_index = i
-        target_file_name = f"{JAV_ID['series']}-{JAV_ID['id']}-{target_resolution[save_index]}-cd{JAV_ID['cd_id'] if JAV_ID['cd_id'] else ''}{video_type}"
+        target_file_name = f"{JAV_ID['series']}-{JAV_ID['id']}{JAV_ID['abc'] if JAV_ID['abc'] else ''}-{target_resolution[save_index]}-cd{JAV_ID['cd_id'] if JAV_ID['cd_id'] else ''}{video_type}"
         target_file_path = f"{target_folder[save_index]}/{target_file_name}"
         ic(target_file_path)
         if CheckIfPlace(target_file_path, failed_video):
