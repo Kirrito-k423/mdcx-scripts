@@ -34,7 +34,7 @@ def check_rename(file_path, new_file_path):
 
 def checkmp4(filename, name, file_path):
     # 使用正则表达式检查是否已经包含 -cd<数字>.mp4
-    if not re.search(r"-cd\d\.mp4$", filename):
+    if not re.search(r"-cd\d+\.mp4$", filename):
         # 重命名为 -cd1.mp4
         new_filename = f"{name}-cd1.mp4"
         new_file_path = os.path.join(folder_path, new_filename)
