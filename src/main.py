@@ -81,6 +81,25 @@ pattern_list = [
         (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
         $
     """,
+    # KIWVR-768-B (2060p)
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (?:[0-]+|-)
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+        (.*)? 
+        $
+    """,
+    # CRVR-363a-4k.h264
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+        (.*)? 
+        $
+    """,
     # DSVR-1016_R2
     r"""
         ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
@@ -153,18 +172,21 @@ def extract_resolution_from_path(path):
     parts = path.split(os.sep)    
     # 遍历路径的每个部分
     for part in parts:
+        ic(part,parts)
         # 检查是否包含分辨率
-        if '8k' in part.lower():
-            return '8K'
         if '4k' in part.lower():
             return '4K'
+        if '8k' in part.lower():
+            return '8K'
     return '4K'
 
 
 def SearchTargetJav(path, JAV_ID):
     # 构建正则表达式模式
-    pattern = re.compile(rf"^{re.escape(JAV_ID['series'])}-{re.escape(JAV_ID['id'])}.*$")
-    
+    # 允许开头有可选的数字组合（比如集数），后跟常见分隔符
+    pattern = re.compile(
+        rf"^(?:\d+[.\-_ ]*)?{re.escape(JAV_ID['series'])}-{re.escape(JAV_ID['id'])}.*$"
+    )
     # 存储匹配的文件夹列表
     matching_folders = []
     target_resolution = []
