@@ -32,7 +32,7 @@ def check_rename(file_path, new_file_path):
     else:
         print("跳过此文件。")
 
-def checkmp4(filename, name, file_path):
+def checkmp4(filename, name, file_path, folder_path):
     # 使用正则表达式检查是否已经包含 -cd<数字>.mp4
     if not re.search(r"-cd\d+\.mp4$", filename):
         # 重命名为 -cd1.mp4
@@ -44,14 +44,14 @@ def checkmp4(filename, name, file_path):
         match = re.search(r"-cd(\d+)\.mp4$", filename)
         if match:
             cd_number = match.group(1)  # 提取数字部分
-            
+
             print("CD 编号:", cd_number)
             return cd_number
         else:
             print("未匹配")
     return None
 
-def checkSpecial(filename, file_path):
+def checkSpecial(filename, file_path, folder_path):
     # 提取基础名称（去掉 -fanart 等后缀）
     for suffix in special_suffixes:
         if filename.endswith(suffix):
@@ -111,17 +111,17 @@ def rename_files_in_directory(folder_path):
             ic("Reading",name,ext)
             # 处理 .mp4 文件
             if ext == ".mp4":
-                id = checkmp4(filename, name, file_path)
+                id = checkmp4(filename, name, file_path, folder_path)
                 if id is not None:
                     ids.append(id)
-                
+
             # 处理特殊文件：-fanart.jpg / -poster.jpg / -thumb.jpg
             elif any(filename.endswith(suffix) for suffix in special_suffixes):
                 # 已经包含 cd 编号就跳过
                 if re.search(r"-cd\d-", filename) or filename.startswith("cd"):
                     continue
 
-                checkSpecial(filename, file_path)
+                checkSpecial(filename, file_path, folder_path)
             
             # 处理其他文件类型（如 .nfo, .jpg, .thumb.jpg 等）
             # else:

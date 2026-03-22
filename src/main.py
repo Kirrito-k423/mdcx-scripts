@@ -2,7 +2,15 @@
 from args import inputParameters, isIceEnable
 from icecream import ic
 import logging
+import sys
+import os
+import glob
+import re
+import shutil
 from rich.logging import RichHandler
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools'))
+from rename import rename_files_in_directory
 
 FORMAT = "%(message)s"
 logging.basicConfig(
@@ -12,11 +20,6 @@ logging.basicConfig(
 log = logging.getLogger("rich")
 # INFO\WARNING、ERROR 或 CRITICAL
 log.setLevel(logging.INFO)
-
-import os
-import glob
-import re
-import shutil
 
 def GetVideoList(path):
     video_files = []
@@ -360,5 +363,6 @@ if __name__ == '__main__':
             
             if user_input in ['y', '']:
                 MoveVideos(target_file_path, failed_video)
+                rename_files_in_directory(target_folder[save_index])
             else:
                 log.info("Move operation skipped by user.")
