@@ -2,7 +2,15 @@
 from args import inputParameters, isIceEnable
 from icecream import ic
 import logging
+import sys
+import os
+import glob
+import re
+import shutil
 from rich.logging import RichHandler
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools'))
+from rename import rename_files_in_directory
 
 FORMAT = "%(message)s"
 logging.basicConfig(
@@ -12,11 +20,6 @@ logging.basicConfig(
 log = logging.getLogger("rich")
 # INFO\WARNING、ERROR 或 CRITICAL
 log.setLevel(logging.INFO)
-
-import os
-import glob
-import re
-import shutil
 
 def GetVideoList(path):
     video_files = []
@@ -70,7 +73,8 @@ pattern_list = [
         (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
         (\_)        # CD-ID，字母和数字的组合
         (?P<cd_id>\d+)           # 最后的数字
-        (.*)?     # 清晰度，可选的8k或4k
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
+        (.*)?     
         $
     """,
     # DSVR-051B-8K
@@ -93,7 +97,7 @@ pattern_list = [
     """,
     # CRVR-363a-4k.h264
     r"""
-        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        ^(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
         (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
         (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
         (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰度，可选的8k或4k
@@ -145,16 +149,42 @@ pattern_list = [
         (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
         $
     """,
-    # 4k2.com@vrkm01580_1_8k
+    # 3dsvr01841_1_8k
     r"""
-        ^(.*\.com@)(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        ^3(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[-_]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (\_)        # CD-ID，字母和数字的组合
+        (?P<cd_id>\d+)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
+        $
+    """,
+    # (SOD)(3DSVR-0498)プール痴漢VR_5.mp4
+    r"""
+        ^(.*)(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)\)                 # ID，连续的数字
+        (.*VR\_)
+        (?P<cd_id>\d+)           # 最后的数字
+        $
+    """,
+    # 4k2.com@mdvr00388_9_8k.mp4
+    r"""
+        ^4k2\.com\@
+        (?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
         (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
         (\_)        # CD-ID，字母和数字的组合
         (?P<cd_id>\d+)           # 最后的数字
         (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
         $
     """,
-    
+    # VRKM-401【VR】天井特化アングルVR ～ミウちゃんの国宝級のおっぱいを堪能せよ～ 有岡みう-R2.mp4
+    r"""
+        ^(?P<series>[3a-zA-Z]+)          # 系列名称，由大写或小写字母组成
+        (?:[0-]+|-)?(?P<id>\d+)                     # ID，连续的数字
+        (\.*-R)        
+        (?P<cd_id>\d*[a-zA-Z]*)           # 最后的数字
+        (?:[_-](?P<resolution>[8|4][K|k]))?     # 清晰1z度，可选的8k或4k
+        $
+    """,
 ]
 
 
@@ -342,5 +372,6 @@ if __name__ == '__main__':
             
             if user_input in ['y', '']:
                 MoveVideos(target_file_path, failed_video)
+                rename_files_in_directory(target_folder[save_index])
             else:
                 log.info("Move operation skipped by user.")
