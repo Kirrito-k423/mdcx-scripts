@@ -8,6 +8,15 @@ special_suffixes = ("-fanart.jpg", "-poster.jpg", "-thumb.jpg")
 
 import shutil
 
+
+def get_next_cd_file_path(folder_path, base_name, suffix):
+    cd_number = 1
+    while True:
+        candidate = os.path.join(folder_path, f"{base_name}-cd{cd_number}{suffix}")
+        if not os.path.exists(candidate):
+            return candidate
+        cd_number += 1
+
 def check_copy(src_file, dst_file):
     """
     在复制文件前询问用户是否执行复制操作。
@@ -35,9 +44,7 @@ def check_rename(file_path, new_file_path):
 def checkmp4(filename, name, file_path, folder_path):
     # 使用正则表达式检查是否已经包含 -cd<数字>.mp4
     if not re.search(r"-cd\d+\.mp4$", filename):
-        # 重命名为 -cd1.mp4
-        new_filename = f"{name}-cd1.mp4"
-        new_file_path = os.path.join(folder_path, new_filename)
+        new_file_path = get_next_cd_file_path(folder_path, name, ".mp4")
         check_rename(file_path, new_file_path)
     else:
         # 为MP4文件匹配其余信息文件
@@ -53,13 +60,18 @@ def checkmp4(filename, name, file_path, folder_path):
 
 def checkSpecial(filename, file_path, folder_path):
     # 提取基础名称（去掉 -fanart 等后缀）
+    base_name = ""
+    matched_suffix = None
     for suffix in special_suffixes:
         if filename.endswith(suffix):
             base_name = filename[:-len(suffix)]
+            matched_suffix = suffix
             break
 
-    new_filename = f"{base_name}-cd1{suffix}"
-    new_file_path = os.path.join(folder_path, new_filename)
+    if matched_suffix is None:
+        return
+
+    new_file_path = get_next_cd_file_path(folder_path, base_name, matched_suffix)
     check_rename(file_path, new_file_path)
     
 def completeInfos(folder_path, ids):
@@ -75,6 +87,8 @@ def completeInfos(folder_path, ids):
                 continue
             ic("Reading",name,ext)
             match = re.search(r"(.*)-cd(\d+)\.mp4$", filename)
+            if match is None:
+                continue
             basename = match.group(1)
             cd_number = match.group(2)
             for suffix in special_suffixes:
