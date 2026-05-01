@@ -35,6 +35,15 @@ def alpha2num(s):
 
 # 定义正则表达式模式
 pattern_list = [
+    # 55tmavr00274_1_8k
+    r"""
+        ^(?:\d+)?(?P<series>[a-zA-Z]+)          # 可选数字前缀 + 系列名称
+        (?:[0-]+|-)?(?P<id>\d+)                 # ID，连续的数字
+        (?:[_-](?P<cd_id>\d*[a-zA-Z]*))?        # CD-ID，可选
+        (?:[_-](?P<resolution>[8|4][K|k]))?      # 清晰度，可选的8k或4k
+        (?:@*)?
+        $
+    """,
     r"""
         ^(?P<series>[a-zA-Z]+)          # 系列名称，由大写或小写字母组成
         (?:[0-]+|-)?(?P<id>\d+)          # ID，由0或-分割的第一个数字编号ID
@@ -218,9 +227,8 @@ def ExstractJAV(video_filename, tryi):
         }
     else:
         if tryi == len(pattern_list) - 1:
-            # 如果没有匹配到，返回None或适当的错误信息
             log.warning(f"Failed to parse video filename: {video_filename}")
-            exit()
+            return None
         else:
             return ExstractJAV(video_filename, tryi + 1)
 
@@ -242,7 +250,8 @@ def SearchTargetJav(path, JAV_ID):
     # 构建正则表达式模式
     # 允许开头有可选的数字组合（比如集数），后跟常见分隔符
     pattern = re.compile(
-        rf"^(?:\d+[.\-_ ]*)?{re.escape(JAV_ID['series'])}-{re.escape(JAV_ID['id'])}.*$"
+        rf"^(?:\d+[.\-_ ]*)?{re.escape(JAV_ID['series'])}-{re.escape(JAV_ID['id'])}.*$",
+        re.IGNORECASE,
     )
     # 存储匹配的文件夹列表
     matching_folders = []
@@ -288,6 +297,17 @@ def MoveVideos(target_file, source_file):
         log.info(f"File moved successfully: {source_file} to {target_file}")
     except Exception as e:
         log.error(f"Failed to move file: {source_file} to {target_file}. Error: {e}")
+
+def should_move_file(default_yes=True):
+    try:
+        user_input = input("Do you want to proceed with the move? [y/Enter to move]: ").strip().lower()
+        return user_input in ['y', '']
+    except EOFError:
+        if default_yes:
+            log.warning("No interactive input detected, continue move by default.")
+            return True
+        log.info("No interactive input detected, skip move.")
+        return False
 
 def MoveQBTail(input_dir):
     if not os.path.isdir(input_dir):
@@ -350,6 +370,9 @@ if __name__ == '__main__':
         # 识别出 AV 的标识
         JAV_ID = ExstractJAV(video_filename, 0)
         ic(JAV_ID)
+        if JAV_ID is None:
+            log.info("Skip unmatched filename: {}".format(failed_video))
+            continue
         target_folder, target_resolution = SearchTargetJav(f"{args_list.path}/JAV_output", JAV_ID)
         ic(target_folder, target_resolution)
         if len(target_folder) == 0:
@@ -363,14 +386,12 @@ if __name__ == '__main__':
         target_file_path = f"{target_folder[save_index]}/{target_file_name}"
         ic(target_file_path)
         if CheckIfPlace(target_file_path, failed_video):
-            if JAV_ID['resolution'] and target_resolution[0] != JAV_ID['resolution']:
+            if JAV_ID['resolution'] and target_resolution[save_index] != JAV_ID['resolution']:
                 log.warning("target resolution: {}, source resolution: {}".
-                         format(target_resolution[0], JAV_ID['resolution']))
+                         format(target_resolution[save_index], JAV_ID['resolution']))
             print("Move {} file to {} ".format(failed_video,target_file_path ))
             
-            user_input = input("Do you want to proceed with the move? [y/Enter to move]: ").strip().lower()
-            
-            if user_input in ['y', '']:
+            if should_move_file(default_yes=True):
                 MoveVideos(target_file_path, failed_video)
                 rename_files_in_directory(target_folder[save_index])
             else:

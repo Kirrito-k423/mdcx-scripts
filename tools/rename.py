@@ -9,6 +9,13 @@ special_suffixes = ("-fanart.jpg", "-poster.jpg", "-thumb.jpg")
 import shutil
 
 
+def read_choice(prompt, default=''):
+    try:
+        return input(prompt).strip().lower()
+    except EOFError:
+        return default
+
+
 def get_next_cd_file_path(folder_path, base_name, suffix):
     cd_number = 1
     while True:
@@ -24,18 +31,18 @@ def check_copy(src_file, dst_file):
     :param src_file: 源文件路径
     :param dst_file: 目标文件路径
     """
-    choice = input(f"是否复制文件？{src_file} -> {dst_file} (y_enter/n): ").strip().lower()
+    choice = read_choice(f"是否复制文件？{src_file} -> {dst_file} (y_enter/n): ", default='')
     if choice in ['y', '']:
         try:
             shutil.copy2(src_file, dst_file)  # 使用 copy2 保留元数据
-            print(f"✅ 文件已复制: {src_file} -> {dst_file}")
+            print(f"File copied: {src_file} -> {dst_file}")
         except Exception as e:
-            print(f"❌ 复制失败: {e}")
+            print(f"Copy failed: {e}")
     else:
         print("跳过此文件。")
 
 def check_rename(file_path, new_file_path):
-    choice = input(f"是否需要重命名 {file_path} -> {new_file_path}？(y_enter/n): ").strip().lower()
+    choice = read_choice(f"是否需要重命名 {file_path} -> {new_file_path}？(y_enter/n): ", default='')
     if choice in ['y', '']:
         os.rename(file_path, new_file_path)
     else:
